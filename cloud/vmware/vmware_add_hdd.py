@@ -62,6 +62,29 @@ EXAMPLES = '''
     diskSize: 3
 '''
 
+RETURN = '''
+controlerKey:
+    description: The controler key for the iSCSI controler
+    returned: changed
+    type: int
+    sample: 200
+diskUnitNumber:
+    description: iSCSI disk number - the assigned number of the newly created disk
+    returned: changed
+    type: int
+    sample: 4
+vm:
+    description: Location of vm that HDDs where added to
+    returned: changed
+    type: string
+    sample: "/clientA/webApp/RHEL7-web-server"
+isThinDisk:
+    description: The type of disk that was created. If a thin disk was created.
+    returned: changed
+    type: bool
+    sample: True
+'''
+
 
 try:
     from pyVmomi import vim, vmodl

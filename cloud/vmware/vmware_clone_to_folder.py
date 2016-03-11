@@ -60,6 +60,25 @@ EXAMPLES = '''
 '''
 
 
+RETURN = '''
+apierror:
+    description: VMWare vSphere API specific error
+    returned: failed
+    type: string
+    sample: "401 Invalid Username / Password"
+template_name:
+    description: source template used to create cloned vm
+    returned: changed
+    type: string
+    sample: "/templates/ansibleTempaltes/RHEL7"
+path:
+    description: Location of the newly created VM
+    returned: changed
+    type: string
+    sample: "/clientA/webApp/RHEL7-web-server"
+'''
+
+
 import ssl
 
 try:
