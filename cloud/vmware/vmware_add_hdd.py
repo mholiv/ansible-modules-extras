@@ -48,6 +48,7 @@ author: "Caitlin Campbell <cacampbe@redhat.com>"
 requirements:
   - "python >= 2.6"
   - pyVmomi
+version_added: 2.1
 '''
 
 
