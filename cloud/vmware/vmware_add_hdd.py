@@ -28,7 +28,7 @@ options:
   diskSize:
     description:
       - The size of the new disk in GB
-    required: false
+    required: True
     default: Resources
   thinDisk:
     description:
@@ -64,7 +64,7 @@ EXAMPLES = '''
 '''
 
 RETURN = '''
-controlerKey:
+controllerKey:
     description: The controler key for the iSCSI controler
     returned: changed
     type: int
@@ -75,7 +75,7 @@ diskUnitNumber:
     type: int
     sample: 4
 vm:
-    description: Location of vm that HDDs where added to
+    description: Location of vm that HDDs were added to
     returned: changed
     type: string
     sample: "/clientA/webApp/RHEL7-web-server"
@@ -196,8 +196,8 @@ def main():
     vmToWorkOn = get_vm_object(module, conn, vm)
 
     try:
-        unitNumber, controlerKey = add_disk(module, vmToWorkOn, diskSize, thinDisk)
-        module.exit_json(changed=True, vm=vm, diskUnitNumber=unitNumber, controlerKey=controlerKey, isThinDisk=thinDisk)
+        unitNumber, controllerKey = add_disk(module, vmToWorkOn, diskSize, thinDisk)
+        module.exit_json(changed=True, vm=vm, diskUnitNumber=unitNumber, controllerKey=controllerKey, isThinDisk=thinDisk)
 
     except Exception, e:
         module.fail_json(msg='Could not add disk', err=e.message)

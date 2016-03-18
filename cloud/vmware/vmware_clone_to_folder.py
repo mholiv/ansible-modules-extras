@@ -272,7 +272,7 @@ def get_folder_object(conn, path_list):
                 return matching_vms[0]
 
     except TypeError:
-        module.fail_json(msg='CFolder %s notfound .' % str(path_list))
+        module.fail_json(msg='Folder %s notfound .' % str(path_list))
 
 def main():
 
@@ -283,7 +283,6 @@ def main():
             template_location=dict(required=True, type='str'),
             destination=dict(required=True, type='str'),
             resource_pool=dict(required=False, default='Resources', type='str'),
-            port=dict(required=False, default=443, type='int'),
         )
     )
 
@@ -300,7 +299,6 @@ def main():
     destination = module.params['destination']
     resource_pool = module.params['resource_pool']
     validate_certs = module.params['validate_certs']
-    port = module.params['port']
 
     path_list = filter(None, destination.split('/'))
     vm_name = path_list.pop(-1)
