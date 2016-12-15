@@ -18,6 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: win_iis_website
@@ -32,6 +36,12 @@ options:
     required: true
     default: null
     aliases: []
+  site_id:
+    description:
+      - Explicitly set the IIS numeric ID for a site. Note that this value cannot be changed after the website has been created.
+    required: false
+    version_added: "2.1"
+    default: null
   state:
     description:
       - State of the web site

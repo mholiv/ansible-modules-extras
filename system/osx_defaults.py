@@ -16,6 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible. If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {'status': ['stableinterface'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: osx_defaults
@@ -33,6 +37,13 @@ options:
       - The domain is a domain name of the form com.companyname.appname.
     required: false
     default: NSGlobalDomain
+  host:
+    description:
+      - The host on which the preference should apply. The special value "currentHost" corresponds to the
+        "-currentHost" switch of the defaults commandline tool.
+    required: false
+    default: null
+    version_added: "2.1"
   key:
     description:
       - The key of the user preference
@@ -65,17 +76,48 @@ notes:
 '''
 
 EXAMPLES = '''
-- osx_defaults: domain=com.apple.Safari key=IncludeInternalDebugMenu type=bool value=true state=present
-- osx_defaults: domain=NSGlobalDomain key=AppleMeasurementUnits type=string value=Centimeters state=present
-- osx_defaults: key=AppleMeasurementUnits type=string value=Centimeters
+- osx_defaults:
+    domain: com.apple.Safari
+    key: IncludeInternalDebugMenu
+    type: bool
+    value: true
+    state: present
+
+- osx_defaults:
+    domain: NSGlobalDomain
+    key: AppleMeasurementUnits
+    type: string
+    value: Centimeters
+    state: present
+
+- osx_defaults:
+    domain: com.apple.screensaver
+    host: currentHost
+    key: showClock
+    type: int
+    value: 1
+
+- osx_defaults:
+    key: AppleMeasurementUnits
+    type: string
+    value: Centimeters
+
 - osx_defaults:
     key: AppleLanguages
     type: array
-    value: ["en", "nl"]
-- osx_defaults: domain=com.geekchimp.macable key=ExampleKeyToRemove state=absent
+    value:
+      - en
+      - nl
+
+- osx_defaults:
+    domain: com.geekchimp.macable
+    key: ExampleKeyToRemove
+    state: absent
 '''
 
-from datetime import datetime
+import datetime
+from ansible.module_utils.basic import *
+from ansible.module_utils.pycompat24 import get_exception
 
 # exceptions --------------------------------------------------------------- {{{
 class OSXDefaultsException(Exception):
@@ -133,7 +175,7 @@ class OSXDefaults(object):
             raise OSXDefaultsException("Invalid boolean value: {0}".format(repr(value)))
         elif type == "date":
             try:
-                return datetime.strptime(value.split("+")[0].strip(), "%Y-%m-%d %H:%M:%S")
+                return datetime.datetime.strptime(value.split("+")[0].strip(), "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 raise OSXDefaultsException(
                     "Invalid date value: {0}. Required format yyy-mm-dd hh:mm:ss.".format(repr(value))
@@ -154,6 +196,19 @@ class OSXDefaults(object):
             return value
 
         raise OSXDefaultsException('Type is not supported: {0}'.format(type))
+
+    """ Returns a normalized list of commandline arguments based on the "host" attribute """
+    def _host_args(self):
+        if self.host is None:
+            return []
+        elif self.host == 'currentHost':
+            return ['-currentHost']
+        else:
+            return ['-host', self.host]
+
+    """ Returns a list containing the "defaults" executable and any common base arguments """
+    def _base_command(self):
+        return [self.executable] + self._host_args()
 
     """ Converts array output from defaults to an list """
     @staticmethod
@@ -176,7 +231,7 @@ class OSXDefaults(object):
     """ Reads value of this domain & key from defaults """
     def read(self):
         # First try to find out the type
-        rc, out, err = self.module.run_command([self.executable, "read-type", self.domain, self.key])
+        rc, out, err = self.module.run_command(self._base_command() + ["read-type", self.domain, self.key])
 
         # If RC is 1, the key does not exists
         if rc == 1:
@@ -190,7 +245,7 @@ class OSXDefaults(object):
         type = out.strip().replace('Type is ', '')
 
         # Now get the current value
-        rc, out, err = self.module.run_command([self.executable, "read", self.domain, self.key])
+        rc, out, err = self.module.run_command(self._base_command() + ["read", self.domain, self.key])
 
         # Strip output
         out = out.strip()
@@ -210,16 +265,16 @@ class OSXDefaults(object):
     def write(self):
 
         # We need to convert some values so the defaults commandline understands it
-        if type(self.value) is bool:
+        if isinstance(self.value, bool):
             if self.value:
                 value = "TRUE"
             else:
                 value = "FALSE"
-        elif type(self.value) is int or type(self.value) is float:
+        elif isinstance(self.value, (int, float)):
             value = str(self.value)
         elif self.array_add and self.current_value is not None:
             value = list(set(self.value) - set(self.current_value))
-        elif isinstance(self.value, datetime):
+        elif isinstance(self.value, datetime.datetime):
             value = self.value.strftime('%Y-%m-%d %H:%M:%S')
         else:
             value = self.value
@@ -232,14 +287,14 @@ class OSXDefaults(object):
         if not isinstance(value, list):
             value = [value]
 
-        rc, out, err = self.module.run_command([self.executable, 'write', self.domain, self.key, '-' + self.type] + value)
+        rc, out, err = self.module.run_command(self._base_command() + ['write', self.domain, self.key, '-' + self.type] + value)
 
         if rc != 0:
             raise OSXDefaultsException('An error occurred while writing value to defaults: ' + out)
 
     """ Deletes defaults key from domain """
     def delete(self):
-        rc, out, err = self.module.run_command([self.executable, 'delete', self.domain, self.key])
+        rc, out, err = self.module.run_command(self._base_command() + ['delete', self.domain, self.key])
         if rc != 0:
             raise OSXDefaultsException("An error occurred while deleting key from defaults: " + out)
 
@@ -254,14 +309,16 @@ class OSXDefaults(object):
 
         # Handle absent state
         if self.state == "absent":
-            print "Absent state detected!"
             if self.current_value is None:
                 return False
+            if self.module.check_mode:
+                return True
             self.delete()
             return True
 
         # There is a type mismatch! Given type does not match the type in defaults
-        if self.current_value is not None and type(self.current_value) is not type(self.value):
+        value_type = type(self.value)
+        if self.current_value is not None and not isinstance(self.current_value, value_type):
             raise OSXDefaultsException("Type mismatch. Type in defaults: " + type(self.current_value).__name__)
 
         # Current value matches the given value. Nothing need to be done. Arrays need extra care
@@ -273,6 +330,9 @@ class OSXDefaults(object):
                 return False
         elif self.current_value == self.value:
             return False
+
+        if self.module.check_mode:
+            return True
 
         # Change/Create/Set given key/value for domain in defaults
         self.write()
@@ -289,6 +349,10 @@ def main():
         argument_spec=dict(
             domain=dict(
                 default="NSGlobalDomain",
+                required=False,
+            ),
+            host=dict(
+                default=None,
                 required=False,
             ),
             key=dict(
@@ -333,6 +397,7 @@ def main():
     )
 
     domain = module.params['domain']
+    host = module.params['host']
     key = module.params['key']
     type = module.params['type']
     array_add = module.params['array_add']
@@ -341,14 +406,15 @@ def main():
     path = module.params['path']
 
     try:
-        defaults = OSXDefaults(module=module, domain=domain, key=key, type=type,
+        defaults = OSXDefaults(module=module, domain=domain, host=host, key=key, type=type,
                                array_add=array_add, value=value, state=state, path=path)
         changed = defaults.run()
         module.exit_json(changed=changed)
-    except OSXDefaultsException, e:
+    except OSXDefaultsException:
+        e = get_exception()
         module.fail_json(msg=e.message)
 
 # /main ------------------------------------------------------------------- }}}
 
-from ansible.module_utils.basic import *
-main()
+if __name__ == '__main__':
+    main()

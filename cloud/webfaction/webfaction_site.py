@@ -22,6 +22,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: webfaction_site
@@ -115,8 +119,8 @@ def main():
             # You can specify an IP address or hostname.
             host = dict(required=True),
             https = dict(required=False, type='bool', default=False),
-            subdomains = dict(required=False, default=[]),
-            site_apps = dict(required=False, default=[]),
+            subdomains = dict(required=False, type='list', default=[]),
+            site_apps = dict(required=False, type='list', default=[]),
             login_name = dict(required=True),
             login_password = dict(required=True),
         ),
@@ -206,5 +210,6 @@ def main():
 
 
 from ansible.module_utils.basic import *
-main()
 
+if __name__ == '__main__':
+    main()

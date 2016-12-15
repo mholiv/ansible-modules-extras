@@ -18,6 +18,10 @@
 # this is a windows documentation stub.  actual code lives in the .ps1
 # file of the same name
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: win_scheduled_task
@@ -25,6 +29,8 @@ version_added: "2.0"
 short_description: Manage scheduled tasks
 description:
     - Manage scheduled tasks
+notes:
+    - This module requires Windows Server 2012 or later.
 options:
   name:
     description:
@@ -77,11 +83,20 @@ options:
     required: false
   path:
     description:
-      - Folder path of scheduled task
+      - Task folder in which this task will be stored
     default: '\'
 '''
 
 EXAMPLES = '''
-  # Create a scheduled task to open a command prompt
-  win_scheduled_task: name="TaskName" execute="cmd" frequency="daily" time="9am" description="open command prompt" path="example" enable=yes state=present user=SYSTEM
+# Create a scheduled task to open a command prompt
+- win_scheduled_task:
+    name: TaskName
+    execute: cmd
+    frequency: daily
+    time: 9am
+    description: open command prompt
+    path: example
+    enable: yes
+    state: present
+    user: SYSTEM
 '''

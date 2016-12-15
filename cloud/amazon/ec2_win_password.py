@@ -13,6 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this library.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: ec2_win_password
@@ -140,8 +144,17 @@ def main():
     if wait and datetime.datetime.now() >= end:
         module.fail_json(msg = "wait for password timeout after %d seconds" % wait_timeout)
 
-    f = open(key_file, 'r')
-    key = RSA.importKey(f.read(), key_passphrase)
+    try:
+        f = open(key_file, 'r')
+    except IOError as e:
+        module.fail_json(msg = "I/O error (%d) opening key file: %s" % (e.errno, e.strerror))
+    else:
+        try:
+            with f:
+                key = RSA.importKey(f.read(), key_passphrase)
+        except (ValueError, IndexError, TypeError) as e:
+            module.fail_json(msg = "unable to parse key file")
+
     cipher = PKCS1_v1_5.new(key)
     sentinel = 'password decryption failed!!!'
 
@@ -163,4 +176,5 @@ def main():
 from ansible.module_utils.basic import *
 from ansible.module_utils.ec2 import *
 
-main()
+if __name__ == '__main__':
+    main()

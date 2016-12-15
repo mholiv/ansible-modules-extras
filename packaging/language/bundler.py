@@ -19,6 +19,10 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION='''
 ---
 module: bundler
@@ -112,19 +116,29 @@ author: "Tim Hoiberg (@thoiberg)"
 
 EXAMPLES='''
 # Installs gems from a Gemfile in the current directory
-- bundler: state=present executable=~/.rvm/gems/2.1.5/bin/bundle
+- bundler:
+    state: present
+    executable: ~/.rvm/gems/2.1.5/bin/bundle
 
 # Excludes the production group from installing
-- bundler: state=present exclude_groups=production
+- bundler:
+    state: present
+    exclude_groups: production
 
 # Only install gems from the default and production groups
-- bundler: state=present deployment=yes
+- bundler:
+    state: present
+    deployment_mode: yes
 
 # Installs gems using a Gemfile in another directory
-- bundler: state=present gemfile=../rails_project/Gemfile
+- bundler:
+    state: present
+    gemfile: ../rails_project/Gemfile
 
 # Updates Gemfile in another directory
-- bundler: state=latest chdir=~/rails_project
+- bundler:
+    state: latest
+    chdir: ~/rails_project
 '''
 
 
@@ -140,15 +154,15 @@ def main():
         argument_spec=dict(
                 executable=dict(default=None, required=False),
                 state=dict(default='present', required=False, choices=['present', 'latest']),
-                chdir=dict(default=None, required=False),
+                chdir=dict(default=None, required=False, type='path'),
                 exclude_groups=dict(default=None, required=False, type='list'),
                 clean=dict(default=False, required=False, type='bool'),
-                gemfile=dict(default=None, required=False),
+                gemfile=dict(default=None, required=False, type='path'),
                 local=dict(default=False, required=False, type='bool'),
                 deployment_mode=dict(default=False, required=False, type='bool'),
                 user_install=dict(default=True, required=False, type='bool'),
-                gem_path=dict(default=None, required=False),
-                binstub_directory=dict(default=None, required=False),
+                gem_path=dict(default=None, required=False, type='path'),
+                binstub_directory=dict(default=None, required=False, type='path'),
                 extra_args=dict(default=None, required=False),
             ),
         supports_check_mode=True

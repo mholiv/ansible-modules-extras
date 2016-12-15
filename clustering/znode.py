@@ -16,6 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = """
 ---
 module: znode
@@ -50,6 +54,12 @@ options:
             - The amount of time to wait for a node to appear.
         default: 300
         required: false
+    recursive:
+        description:
+            - Recursively delete node and all its children.
+        default: False
+        required: false
+        version_added: "2.1"
 requirements:
     - kazoo >= 2.1
     - python >= 2.6
@@ -58,19 +68,36 @@ author: "Trey Perry (@treyperry)"
 
 EXAMPLES = """
 # Creating or updating a znode with a given value
-- action: znode hosts=localhost:2181 name=/mypath value=myvalue state=present
+- znode:
+    hosts: 'localhost:2181'
+    name: /mypath
+    value: myvalue
+    state: present
 
 # Getting the value and stat structure for a znode
-- action: znode hosts=localhost:2181 name=/mypath op=get
+- znode:
+    hosts: 'localhost:2181'
+    name: /mypath
+    op: get
 
 # Listing a particular znode's children
-- action: znode hosts=localhost:2181 name=/zookeeper op=list
+- znode:
+    hosts: 'localhost:2181'
+    name: /zookeeper
+    op: list
 
 # Waiting 20 seconds for a znode to appear at path /mypath
-- action: znode hosts=localhost:2181 name=/mypath op=wait timeout=20
+- znode:
+    hosts: 'localhost:2181'
+    name: /mypath
+    op: wait
+    timeout: 20
 
 # Deleting a znode at path /mypath
-- action: znode hosts=localhost:2181 name=/mypath state=absent
+- znode:
+    hosts: 'localhost:2181'
+    name: /mypath
+    state: absent
 """
 
 try:
@@ -90,7 +117,8 @@ def main():
             value=dict(required=False, default=None, type='str'),
             op=dict(required=False, default=None, choices=['get', 'wait', 'list']),
             state=dict(choices=['present', 'absent']),
-            timeout=dict(required=False, default=300, type='int')
+            timeout=dict(required=False, default=300, type='int'),
+            recursive=dict(required=False, default=False, type='bool')
         ),
         supports_check_mode=False
     )
@@ -175,7 +203,7 @@ class KazooCommandProxy():
 
     def _absent(self, znode):
         if self.exists(znode):
-            self.zk.delete(znode)
+            self.zk.delete(znode, recursive=self.module.params['recursive'])
             return True, {'changed': True, 'msg': 'The znode was deleted.'}
         else:
             return True, {'changed': False, 'msg': 'The znode does not exist.'}
@@ -187,7 +215,7 @@ class KazooCommandProxy():
             for i in dir(zstat):
                 if not i.startswith('_'):
                     attr = getattr(zstat, i)
-                    if type(attr) in (int, str):
+                    if isinstance(attr, (int, str)):
                         stat_dict[i] = attr
             result = True, {'msg': 'The node was retrieved.', 'znode': path, 'value': value,
                             'stat': stat_dict}
@@ -224,4 +252,5 @@ class KazooCommandProxy():
 
 from ansible.module_utils.basic import *
 
-main()
+if __name__ == '__main__':
+    main()

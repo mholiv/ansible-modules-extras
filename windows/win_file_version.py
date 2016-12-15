@@ -17,11 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 module: win_file_version
 version_added: "2.1"
-short_descriptions: Get DLL or EXE file build version
+short_description: Get DLL or EXE file build version
 description:
   - Get DLL or EXE file build version
   - change state alway be false
@@ -42,7 +46,8 @@ EXAMPLES = '''
     path: 'C:\Windows\System32\cmd.exe'
   register: exe_file_version
 
-- debug: msg="{{exe_file_version}}"
+- debug:
+    msg: '{{ exe_file_version }}'
 
 '''
 

@@ -16,6 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.0'}
+
 DOCUMENTATION = '''
 ---
 author: "Willy Barro (@willybarro)"
@@ -108,7 +112,7 @@ else:
 def main():
     module = AnsibleModule(
         argument_spec = dict(
-            api_key     = dict(type='str', required=True),
+            api_key     = dict(type='str', required=True, no_log=True),
             channel     = dict(type='str', default=None),
             device      = dict(type='str', default=None),
             push_type   = dict(type='str', default="note", choices=['note', 'link']),
@@ -184,4 +188,6 @@ def main():
 
 # import module snippets
 from ansible.module_utils.basic import *
-main()
+
+if __name__ == '__main__':
+    main()
